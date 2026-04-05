@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   },
   description:
     "Insights, trends, and strategies for modern finance and growth.",
+  icons: {
+    icon: "/favicon.svg",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",

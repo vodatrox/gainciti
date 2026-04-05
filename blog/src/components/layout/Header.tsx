@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Logo } from "@/components/common/Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { SearchInput } from "@/components/search/SearchInput";
 import { MobileMenu } from "./MobileMenu";
@@ -18,14 +19,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-surface/80 backdrop-blur-lg dark:border-gray-800">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-1.5">
-          <span className="text-2xl font-extrabold tracking-tight text-brand-dark dark:text-white">
-            G<span className="relative">A<svg className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-3.5 h-2.5" viewBox="0 0 14 10" fill="none"><path d="M2 8L7 3L12 8" stroke="#3BE882" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>inciti
-          </span>
+        <Link href="/" className="flex items-center">
+          <Logo size="md" className="text-[#152238] dark:text-white" />
         </Link>
 
-        {/* Desktop Nav */}
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
             <Link
@@ -38,13 +35,11 @@ export function Header() {
           ))}
         </nav>
 
-        {/* Right side */}
         <div className="flex items-center gap-3">
           <div className="hidden sm:block">
             <SearchInput />
           </div>
           <ThemeToggle />
-          {/* Mobile hamburger */}
           <button
             onClick={() => setMobileOpen(true)}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden"

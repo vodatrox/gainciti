@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     template: "%s | GainCiti Admin",
   },
   description: "GainCiti blog administration panel",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

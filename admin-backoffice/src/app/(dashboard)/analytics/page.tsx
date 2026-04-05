@@ -116,7 +116,7 @@ export default function AnalyticsPage() {
                 />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} />
-                <Line type="monotone" dataKey="views" stroke="#4F46E5" strokeWidth={2} dot={false} name="Views" />
+                <Line type="monotone" dataKey="views" stroke="#22C55E" strokeWidth={2} dot={false} name="Views" />
                 <Line type="monotone" dataKey="unique_visitors" stroke="#10B981" strokeWidth={2} dot={false} name="Unique Visitors" />
               </LineChart>
             </ResponsiveContainer>

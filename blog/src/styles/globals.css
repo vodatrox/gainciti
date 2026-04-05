@@ -21,9 +21,9 @@
 
   /* Surface colors */
   --color-surface: #FFFFFF;
-  --color-surface-secondary: #F8FAF9;
-  --color-surface-dark: #0D1F0D;
-  --color-surface-dark-secondary: #162A16;
+  --color-surface-secondary: #F7F9F8;
+  --color-surface-dark: #0F1A12;
+  --color-surface-dark-secondary: #1A2B1E;
 
   /* Text */
   --color-text-primary: #111827;
@@ -38,10 +38,10 @@
 
 /* Dark mode overrides */
 .dark {
-  --color-surface: #0D1F0D;
-  --color-surface-secondary: #162A16;
-  --color-text-primary: #F9FAFB;
-  --color-text-secondary: #9CA3AF;
+  --color-surface: #0F1A12;
+  --color-surface-secondary: #1A2B1E;
+  --color-text-primary: #F1F5F2;
+  --color-text-secondary: #94A39A;
 }
 
 /* Smooth scrolling */

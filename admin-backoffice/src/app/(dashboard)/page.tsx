@@ -159,7 +159,7 @@ export default function DashboardPage() {
                   <Line
                     type="monotone"
                     dataKey="views"
-                    stroke="#4F46E5"
+                    stroke="#22C55E"
                     strokeWidth={2}
                     dot={false}
                     name="Views"

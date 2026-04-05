@@ -7,15 +7,15 @@ import { confirmModal } from "@/components/common/ConfirmModal";
 import type { Category, PaginatedResponse } from "@/lib/types";
 
 const DEFAULT_COLORS = [
-  "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#6366F1",
-  "#8B5CF6", "#EC4899", "#14B8A6", "#F97316", "#64748B",
+  "#22C55E", "#16A34A", "#152238", "#3BE882", "#15803D",
+  "#166534", "#0D9488", "#F59E0B", "#EF4444", "#64748B",
 ];
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState({ name: "", description: "", color: "#6366F1", sort_order: 0 });
+  const [form, setForm] = useState({ name: "", description: "", color: "#22C55E", sort_order: 0 });
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -39,7 +39,7 @@ export default function CategoriesPage() {
   }, [fetchCategories]);
 
   const resetForm = () => {
-    setForm({ name: "", description: "", color: "#6366F1", sort_order: 0 });
+    setForm({ name: "", description: "", color: "#22C55E", sort_order: 0 });
     setEditingId(null);
     setShowCreate(false);
   };
@@ -73,7 +73,7 @@ export default function CategoriesPage() {
     setForm({
       name: cat.name,
       description: cat.description || "",
-      color: cat.color || "#6366F1",
+      color: cat.color || "#22C55E",
       sort_order: cat.sort_order || 0,
     });
     setShowCreate(true);
@@ -228,7 +228,7 @@ export default function CategoriesPage() {
                   <td className="px-4 py-3">
                     <div
                       className="h-5 w-5 rounded-full"
-                      style={{ backgroundColor: cat.color || "#6366F1" }}
+                      style={{ backgroundColor: cat.color || "#22C55E" }}
                     />
                   </td>
                   <td className="px-4 py-3 font-medium">{cat.name}</td>
