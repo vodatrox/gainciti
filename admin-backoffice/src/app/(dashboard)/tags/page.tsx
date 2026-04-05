@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api/client";
+import { toast } from "@/components/common/Toast";
+import { confirmModal } from "@/components/common/ConfirmModal";
 import type { PaginatedResponse, Tag } from "@/lib/types";
 
 export default function TagsPage() {
@@ -45,9 +47,10 @@ export default function TagsPage() {
         body: JSON.stringify({ name: newName.trim() }),
       });
       setNewName("");
+      toast.success("Tag created");
       fetchTags();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Create failed");
+      toast.error("Create failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSaving(false);
     }
@@ -62,18 +65,30 @@ export default function TagsPage() {
         body: JSON.stringify({ name: editName.trim() }),
       });
       setEditingId(null);
+      toast.success("Tag updated");
       fetchTags();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Update failed");
+      toast.error("Update failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this tag?")) return;
-    await adminFetch(`/admin/tags/${id}/`, { method: "DELETE" });
-    fetchTags();
+    const ok = await confirmModal({
+      title: "Delete tag",
+      message: "This tag will be permanently removed from all posts. This action cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      await adminFetch(`/admin/tags/${id}/`, { method: "DELETE" });
+      toast.success("Tag deleted");
+      fetchTags();
+    } catch (err) {
+      toast.error("Delete failed", err instanceof Error ? err.message : "An unexpected error occurred");
+    }
   };
 
   return (

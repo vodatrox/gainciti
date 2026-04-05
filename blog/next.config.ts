@@ -10,8 +10,17 @@ const nextConfig: NextConfig = {
         port: "8000",
       },
       {
+        protocol: "http",
+        hostname: "backend",
+        port: "8000",
+      },
+      {
         protocol: "https",
-        hostname: "api.gainciti.com",
+        hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
       },
     ],
   },

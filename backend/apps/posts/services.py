@@ -1,5 +1,8 @@
 import math
 import re
+from html.parser import HTMLParser
+from io import StringIO
+
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.utils import timezone
 from django.utils.text import slugify
@@ -18,22 +21,20 @@ class PostService:
         return max(1, math.ceil(word_count / 200))
 
     @staticmethod
-    def _extract_text_from_tiptap(body: dict) -> str:
-        """Extract plain text from TipTap JSON document."""
-        texts = []
+    def _strip_html_tags(html: str) -> str:
+        """Extract plain text from HTML content."""
+        class _HTMLStripper(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self._texts = []
+            def handle_data(self, data):
+                self._texts.append(data)
+            def get_text(self):
+                return " ".join(self._texts)
 
-        def walk(node):
-            if isinstance(node, dict):
-                if "text" in node:
-                    texts.append(node["text"])
-                for child in node.get("content", []):
-                    walk(child)
-            elif isinstance(node, list):
-                for item in node:
-                    walk(item)
-
-        walk(body)
-        return " ".join(texts)
+        stripper = _HTMLStripper()
+        stripper.feed(html)
+        return stripper.get_text()
 
     @staticmethod
     def _generate_unique_slug(title: str, exclude_id=None) -> str:
@@ -49,8 +50,10 @@ class PostService:
         return slug
 
     def create_post(self, data: dict, author) -> Post:
-        body = data.get("body", {})
-        body_text = self._extract_text_from_tiptap(body)
+        body_html = data.get("body", "")
+        if isinstance(body_html, dict):
+            body_html = ""
+        body_text = self._strip_html_tags(body_html)
         reading_time = self._compute_reading_time(body_text)
 
         if not data.get("slug"):
@@ -62,6 +65,7 @@ class PostService:
         post = self.repo.create({
             **data,
             "author": author,
+            "body_html": body_html,
             "body_text": body_text,
             "reading_time_minutes": reading_time,
         })
@@ -70,9 +74,12 @@ class PostService:
 
     def update_post(self, post_id, data: dict) -> Post:
         post = self.repo.get_by_id(post_id)
-        body = data.get("body", post.body)
-        body_text = self._extract_text_from_tiptap(body)
+        body_html = data.get("body", post.body_html)
+        if isinstance(body_html, dict):
+            body_html = post.body_html or ""
+        body_text = self._strip_html_tags(body_html)
 
+        data["body_html"] = body_html
         data["body_text"] = body_text
         data["reading_time_minutes"] = self._compute_reading_time(body_text)
 

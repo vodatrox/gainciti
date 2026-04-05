@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { adminFetch } from "@/lib/api/client";
+import { toast } from "@/components/common/Toast";
+import { confirmModal } from "@/components/common/ConfirmModal";
 import { cn } from "@/lib/utils/cn";
 import type { Comment, PaginatedResponse } from "@/lib/types";
 
@@ -17,6 +19,7 @@ export default function CommentsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const pageSize = 20;
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -52,18 +55,30 @@ export default function CommentsPage() {
         method: "PATCH",
         body: JSON.stringify({ is_approved: true }),
       });
+      toast.success("Comment approved");
       fetchComments();
+    } catch (err) {
+      toast.error("Approve failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setActionLoading(null);
     }
   };
 
   const rejectComment = async (id: string) => {
-    if (!confirm("Delete this comment permanently?")) return;
+    const ok = await confirmModal({
+      title: "Delete comment",
+      message: "This comment will be permanently deleted. This action cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     setActionLoading(id);
     try {
       await adminFetch(`/admin/comments/${id}/`, { method: "DELETE" });
+      toast.success("Comment deleted");
       fetchComments();
+    } catch (err) {
+      toast.error("Delete failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setActionLoading(null);
     }
@@ -80,24 +95,37 @@ export default function CommentsPage() {
           }),
         ),
       );
+      toast.success(`${selected.size} comment(s) approved`);
       setSelected(new Set());
       fetchComments();
+    } catch (err) {
+      toast.error("Bulk approve failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setBulkLoading(false);
     }
   };
 
   const bulkDelete = async () => {
-    if (!confirm(`Delete ${selected.size} comment(s) permanently?`)) return;
+    const ok = await confirmModal({
+      title: "Delete comments",
+      message: `${selected.size} comment(s) will be permanently deleted. This action cannot be undone.`,
+      confirmLabel: "Delete all",
+      variant: "danger",
+    });
+    if (!ok) return;
     setBulkLoading(true);
     try {
+      const count = selected.size;
       await Promise.all(
         Array.from(selected).map((id) =>
           adminFetch(`/admin/comments/${id}/`, { method: "DELETE" }),
         ),
       );
+      toast.success(`${count} comment(s) deleted`);
       setSelected(new Set());
       fetchComments();
+    } catch (err) {
+      toast.error("Bulk delete failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setBulkLoading(false);
     }
@@ -119,6 +147,18 @@ export default function CommentsPage() {
       setSelected(new Set(comments.map((c) => c.id)));
     }
   };
+
+  const toggleExpanded = (postId: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+  };
+
+  const expandAll = () => setExpanded(new Set(Object.keys(grouped)));
+  const collapseAll = () => setExpanded(new Set());
 
   // Group comments by post
   const grouped = comments.reduce<
@@ -180,6 +220,24 @@ export default function CommentsPage() {
           ))}
         </div>
 
+        {/* Expand / Collapse all */}
+        {!loading && comments.length > 0 && (
+          <div className="flex gap-1">
+            <button
+              onClick={expandAll}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-50"
+            >
+              Expand All
+            </button>
+            <button
+              onClick={collapseAll}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-gray-50"
+            >
+              Collapse All
+            </button>
+          </div>
+        )}
+
         {/* Bulk actions */}
         {selected.size > 0 && (
           <div className="ml-auto flex items-center gap-2">
@@ -233,10 +291,25 @@ export default function CommentsPage() {
               <span className="text-sm text-text-secondary">Select all on this page</span>
             </div>
 
-            {Object.entries(grouped).map(([postId, group]) => (
+            {Object.entries(grouped).map(([postId, group]) => {
+              const isExpanded = expanded.has(postId);
+              const pendingInGroup = group.comments.filter((c) => !c.is_approved).length;
+              return (
               <div key={postId} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                {/* Post header */}
-                <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/80 px-5 py-3">
+                {/* Post header — clickable */}
+                <button
+                  onClick={() => toggleExpanded(postId)}
+                  className="flex w-full items-center gap-3 bg-gray-50/80 px-5 py-3 text-left transition-colors hover:bg-gray-100/80"
+                >
+                  <svg
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-text-secondary transition-transform duration-200",
+                      isExpanded && "rotate-90",
+                    )}
+                    fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                  </svg>
                   <svg className="h-4 w-4 shrink-0 text-text-secondary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                   </svg>
@@ -246,9 +319,15 @@ export default function CommentsPage() {
                   <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-text-secondary">
                     {group.comments.length} comment{group.comments.length !== 1 ? "s" : ""}
                   </span>
-                </div>
+                  {pendingInGroup > 0 && (
+                    <span className="shrink-0 rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-700">
+                      {pendingInGroup} pending
+                    </span>
+                  )}
+                </button>
 
-                {/* Comments for this post */}
+                {/* Comments for this post — collapsible */}
+                {isExpanded && (
                 <div className="divide-y divide-gray-100">
                   {group.comments.map((comment) => (
                     <div
@@ -365,8 +444,10 @@ export default function CommentsPage() {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>

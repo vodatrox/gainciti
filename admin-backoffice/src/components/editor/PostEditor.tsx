@@ -10,9 +10,11 @@ import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { all, createLowlight } from "lowlight";
 import { adminFetch } from "@/lib/api/client";
+import { toast } from "@/components/common/Toast";
 import { EditorToolbar } from "./EditorToolbar";
 import type {
   Category,
+  MediaAsset,
   PaginatedResponse,
   PostCreateUpdatePayload,
   PostDetail,
@@ -51,6 +53,13 @@ export function PostEditor({ postId }: PostEditorProps) {
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [scheduledFor, setScheduledFor] = useState("");
+  const [publishedAt, setPublishedAt] = useState("");
+
+  const [featuredImageId, setFeaturedImageId] = useState<number | null>(null);
+  const [featuredImageUrl, setFeaturedImageUrl] = useState("");
+  const [externalImageUrl, setExternalImageUrl] = useState("");
+  const [imageMode, setImageMode] = useState<"upload" | "url">("upload");
+  const [uploading, setUploading] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -101,7 +110,15 @@ export function PostEditor({ postId }: PostEditorProps) {
       setTagIds(post.tags.map((t) => t.id));
       setIsFeatured(post.is_featured);
       setPosition(post.position || "");
-      editor?.commands.setContent(post.body || "");
+      setPublishedAt(post.published_at ? post.published_at.slice(0, 16) : "");
+      if (post.featured_image_url) {
+        setFeaturedImageUrl(post.featured_image_url);
+      }
+      if (post.featured_image_external_url) {
+        setExternalImageUrl(post.featured_image_external_url);
+        setImageMode("url");
+      }
+      editor?.commands.setContent(post.body_html || post.body || "");
       setLoading(false);
     });
   }, [postId, editor]);
@@ -128,10 +145,15 @@ export function PostEditor({ postId }: PostEditorProps) {
         status: overrideStatus || status,
         is_featured: isFeatured,
         position: position as PostCreateUpdatePayload["position"],
+        ...(featuredImageId ? { featured_image: featuredImageId } : {}),
+        featured_image_external_url: imageMode === "url" ? externalImageUrl : "",
       };
 
       if ((overrideStatus || status) === "scheduled" && scheduledFor) {
         payload.scheduled_for = scheduledFor;
+      }
+      if (publishedAt) {
+        payload.published_at = new Date(publishedAt).toISOString();
       }
 
       try {
@@ -140,22 +162,23 @@ export function PostEditor({ postId }: PostEditorProps) {
             method: "PATCH",
             body: JSON.stringify(payload),
           });
+          toast.success("Post saved");
         } else {
           const created = await adminFetch<PostDetail>("/admin/posts/", {
             method: "POST",
             body: JSON.stringify(payload),
           });
+          toast.success("Post created");
           router.push(`/posts/${created.id}/edit`);
           return;
         }
-        // Stay on page after update
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Save failed");
+        toast.error("Save failed", err instanceof Error ? err.message : "An unexpected error occurred");
       } finally {
         setSaving(false);
       }
     },
-    [editor, title, slug, excerpt, status, categoryId, tagIds, isFeatured, position, scheduledFor, isEditing, postId, router],
+    [editor, title, slug, excerpt, status, categoryId, tagIds, isFeatured, position, scheduledFor, publishedAt, featuredImageId, externalImageUrl, imageMode, isEditing, postId, router],
   );
 
   const handlePublish = useCallback(() => handleSave("published"), [handleSave]);
@@ -174,6 +197,30 @@ export function PostEditor({ postId }: PostEditorProps) {
       // silent
     }
   }, [newTagName]);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const asset = await adminFetch<MediaAsset>("/admin/media/", {
+        method: "POST",
+        body: formData as unknown as BodyInit,
+      });
+      setFeaturedImageId(asset.id);
+      setFeaturedImageUrl(asset.file_url);
+    } catch (err) {
+      toast.error("Upload failed", err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  const removeFeaturedImage = useCallback(() => {
+    setFeaturedImageId(null);
+    setFeaturedImageUrl("");
+    setExternalImageUrl("");
+  }, []);
 
   if (loading) {
     return (
@@ -275,6 +322,15 @@ export function PostEditor({ postId }: PostEditorProps) {
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                 />
               )}
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">Published date</label>
+                <input
+                  type="datetime-local"
+                  value={publishedAt}
+                  onChange={(e) => setPublishedAt(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                />
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleSave()}
@@ -377,10 +433,81 @@ export function PostEditor({ postId }: PostEditorProps) {
 
           {/* Featured Image */}
           <div className="rounded-xl border border-gray-200 p-4">
-            <h3 className="font-semibold">Featured Image</h3>
-            <div className="mt-2 flex h-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm text-text-secondary cursor-pointer hover:border-primary-400 transition-colors">
-              Click to select from media library
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Featured Image</h3>
+              <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setImageMode("upload")}
+                  className={`rounded-md px-2 py-1 ${imageMode === "upload" ? "bg-white shadow-sm font-medium" : "text-text-secondary"}`}
+                >
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageMode("url")}
+                  className={`rounded-md px-2 py-1 ${imageMode === "url" ? "bg-white shadow-sm font-medium" : "text-text-secondary"}`}
+                >
+                  URL
+                </button>
+              </div>
             </div>
+
+            {/* Preview */}
+            {(featuredImageUrl || (imageMode === "url" && externalImageUrl)) && (
+              <div className="relative mt-2">
+                <img
+                  src={imageMode === "url" ? externalImageUrl : featuredImageUrl}
+                  alt="Featured"
+                  className="w-full rounded-lg object-cover max-h-48"
+                />
+                <button
+                  type="button"
+                  onClick={removeFeaturedImage}
+                  className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {imageMode === "upload" ? (
+              <>
+                {!featuredImageUrl && (
+                  <label className="mt-2 flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm text-text-secondary hover:border-primary-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file);
+                      }}
+                    />
+                    {uploading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+                        Uploading...
+                      </div>
+                    ) : (
+                      <span>Click to upload image</span>
+                    )}
+                  </label>
+                )}
+              </>
+            ) : (
+              <div className="mt-2">
+                <input
+                  type="url"
+                  value={externalImageUrl}
+                  onChange={(e) => setExternalImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary-500"
+                />
+              </div>
+            )}
           </div>
 
           {/* Position & Featured */}

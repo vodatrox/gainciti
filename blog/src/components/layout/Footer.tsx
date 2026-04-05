@@ -7,12 +7,9 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white font-bold">
-                G
-              </div>
-              <span className="text-lg font-bold tracking-tight">
-                Gain<span className="text-primary-600">Citi</span>
+            <Link href="/" className="flex items-center gap-1.5">
+              <span className="text-xl font-extrabold tracking-tight text-brand-dark dark:text-white">
+                G<span className="relative">A<svg className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-3 h-2" viewBox="0 0 14 10" fill="none"><path d="M2 8L7 3L12 8" stroke="#3BE882" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>inciti
               </span>
             </Link>
             <p className="mt-3 max-w-md text-sm text-text-secondary">

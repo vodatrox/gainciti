@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api/client";
+import { toast } from "@/components/common/Toast";
+import { confirmModal } from "@/components/common/ConfirmModal";
 import type { Category, PaginatedResponse } from "@/lib/types";
 
 const DEFAULT_COLORS = [
@@ -56,10 +58,11 @@ export default function CategoriesPage() {
           body: JSON.stringify(form),
         });
       }
+      toast.success(editingId ? "Category updated" : "Category created");
       resetForm();
       fetchCategories();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Save failed");
+      toast.error("Save failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSaving(false);
     }
@@ -77,9 +80,20 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this category?")) return;
-    await adminFetch(`/admin/categories/${id}/`, { method: "DELETE" });
-    fetchCategories();
+    const ok = await confirmModal({
+      title: "Delete category",
+      message: "This will permanently delete this category. Posts in this category will need to be reassigned.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      await adminFetch(`/admin/categories/${id}/`, { method: "DELETE" });
+      toast.success("Category deleted");
+      fetchCategories();
+    } catch (err) {
+      toast.error("Delete failed", err instanceof Error ? err.message : "An unexpected error occurred");
+    }
   };
 
   return (

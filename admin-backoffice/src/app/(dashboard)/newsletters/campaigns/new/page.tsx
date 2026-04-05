@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/lib/api/client";
+import { toast } from "@/components/common/Toast";
+import { confirmModal } from "@/components/common/ConfirmModal";
 import type { Campaign } from "@/lib/types";
 
 export default function NewCampaignPage() {
@@ -21,9 +23,10 @@ export default function NewCampaignPage() {
         method: "POST",
         body: JSON.stringify({ subject, body_html: bodyHtml }),
       });
+      toast.success("Campaign saved");
       router.push("/newsletters");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Save failed");
+      toast.error("Save failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSaving(false);
     }
@@ -31,10 +34,16 @@ export default function NewCampaignPage() {
 
   const handleSend = useCallback(async () => {
     if (!subject.trim() || !bodyHtml.trim()) {
-      alert("Subject and body are required to send");
+      toast.warning("Missing fields", "Subject and body are required to send");
       return;
     }
-    if (!confirm("Send this campaign to all confirmed subscribers?")) return;
+    const ok = await confirmModal({
+      title: "Send campaign",
+      message: "This campaign will be sent to all confirmed subscribers. This action cannot be undone.",
+      confirmLabel: "Send now",
+      variant: "warning",
+    });
+    if (!ok) return;
     setSending(true);
     try {
       const campaign = await adminFetch<Campaign>(
@@ -47,9 +56,10 @@ export default function NewCampaignPage() {
       await adminFetch(`/admin/newsletter/campaigns/${campaign.id}/send/`, {
         method: "POST",
       });
+      toast.success("Campaign sent", "Your newsletter is being delivered to all subscribers");
       router.push("/newsletters");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Send failed");
+      toast.error("Send failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSending(false);
     }

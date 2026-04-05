@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { adminFetch } from "@/lib/api/client";
+import { toast } from "@/components/common/Toast";
+import { confirmModal } from "@/components/common/ConfirmModal";
 import { cn } from "@/lib/utils/cn";
 import type {
   Category,
@@ -95,16 +97,26 @@ export default function PostsPage() {
   };
 
   const bulkDelete = async () => {
-    if (!confirm(`Delete ${selected.size} post(s)?`)) return;
+    const ok = await confirmModal({
+      title: "Delete posts",
+      message: `${selected.size} post(s) will be archived. This action can be reversed from the database.`,
+      confirmLabel: "Delete all",
+      variant: "danger",
+    });
+    if (!ok) return;
     setBulkLoading(true);
     try {
+      const count = selected.size;
       await Promise.all(
         Array.from(selected).map((id) =>
           adminFetch(`/admin/posts/${id}/`, { method: "DELETE" }),
         ),
       );
+      toast.success(`${count} post(s) archived`);
       setSelected(new Set());
       fetchPosts();
+    } catch (err) {
+      toast.error("Delete failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setBulkLoading(false);
     }
@@ -113,22 +125,37 @@ export default function PostsPage() {
   const bulkPublish = async () => {
     setBulkLoading(true);
     try {
+      const count = selected.size;
       await Promise.all(
         Array.from(selected).map((id) =>
           adminFetch(`/admin/posts/${id}/publish/`, { method: "POST" }),
         ),
       );
+      toast.success(`${count} post(s) published`);
       setSelected(new Set());
       fetchPosts();
+    } catch (err) {
+      toast.error("Publish failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setBulkLoading(false);
     }
   };
 
   const deletePost = async (id: string) => {
-    if (!confirm("Delete this post?")) return;
-    await adminFetch(`/admin/posts/${id}/`, { method: "DELETE" });
-    fetchPosts();
+    const ok = await confirmModal({
+      title: "Delete post",
+      message: "This post will be archived. This action can be reversed from the database.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      await adminFetch(`/admin/posts/${id}/`, { method: "DELETE" });
+      toast.success("Post archived");
+      fetchPosts();
+    } catch (err) {
+      toast.error("Delete failed", err instanceof Error ? err.message : "An unexpected error occurred");
+    }
   };
 
   return (

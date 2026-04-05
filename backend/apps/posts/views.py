@@ -121,6 +121,7 @@ class AdminPostViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsAdminOrEditor)
     pagination_class = StandardPageNumberPagination
     filterset_class = PostFilter
+    search_fields = ("title", "excerpt", "body")
 
     def get_queryset(self):
         return PostRepository().get_all()

@@ -54,13 +54,16 @@ export async function adminFetch<T>(
 
   let token = localStorage.getItem("gc_access");
 
+  const isFormData = fetchOptions.body instanceof FormData;
+  const buildHeaders = (t: string | null) => ({
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(t ? { Authorization: `Bearer ${t}` } : {}),
+    ...fetchOptions.headers,
+  });
+
   let response = await fetch(url, {
     ...fetchOptions,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...fetchOptions.headers,
-    },
+    headers: buildHeaders(token),
   });
 
   // Auto-refresh on 401
@@ -69,11 +72,7 @@ export async function adminFetch<T>(
     if (token) {
       response = await fetch(url, {
         ...fetchOptions,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          ...fetchOptions.headers,
-        },
+        headers: buildHeaders(token),
       });
     }
   }

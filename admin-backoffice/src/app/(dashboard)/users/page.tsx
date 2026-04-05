@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { adminFetch } from "@/lib/api/client";
+import { toast } from "@/components/common/Toast";
 import { cn } from "@/lib/utils/cn";
 import type { PaginatedResponse, User } from "@/lib/types";
 
@@ -63,9 +64,10 @@ export default function UsersPage() {
       });
       setShowCreate(false);
       setForm({ email: "", first_name: "", last_name: "", password: "", role: "author" });
+      toast.success("User created");
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Create failed");
+      toast.error("Create failed", err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSaving(false);
     }
@@ -78,9 +80,10 @@ export default function UsersPage() {
         body: JSON.stringify({ role }),
       });
       setEditingRole(null);
+      toast.success("Role updated");
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Update failed");
+      toast.error("Update failed", err instanceof Error ? err.message : "An unexpected error occurred");
     }
   };
 

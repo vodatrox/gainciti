@@ -62,6 +62,7 @@ class Post(models.Model):
         blank=True,
         related_name="featured_posts",
     )
+    featured_image_external_url = models.URLField(max_length=500, blank=True, default="")
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

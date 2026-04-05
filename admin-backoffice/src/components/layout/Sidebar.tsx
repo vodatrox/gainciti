@@ -96,13 +96,10 @@ export function Sidebar() {
     <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-200 bg-white">
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white font-bold text-sm">
-          G
-        </div>
-        <span className="text-lg font-bold tracking-tight">
-          Gain<span className="text-primary-600">Citi</span>
+        <span className="text-xl font-extrabold tracking-tight text-brand-dark">
+          G<span className="relative">A<svg className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-3 h-2" viewBox="0 0 14 10" fill="none"><path d="M2 8L7 3L12 8" stroke="#3BE882" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>inciti
         </span>
-        <span className="ml-1 rounded bg-primary-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary-600">
+        <span className="rounded bg-brand-dark px-1.5 py-0.5 text-[10px] font-semibold text-brand-green">
           ADMIN
         </span>
       </div>

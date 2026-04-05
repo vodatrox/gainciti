@@ -19,12 +19,9 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-surface/80 backdrop-blur-lg dark:border-gray-800">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white font-bold text-lg">
-            G
-          </div>
-          <span className="text-xl font-bold tracking-tight">
-            Gain<span className="text-primary-600">Citi</span>
+        <Link href="/" className="flex items-center gap-1.5">
+          <span className="text-2xl font-extrabold tracking-tight text-brand-dark dark:text-white">
+            G<span className="relative">A<svg className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-3.5 h-2.5" viewBox="0 0 14 10" fill="none"><path d="M2 8L7 3L12 8" stroke="#3BE882" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>inciti
           </span>
         </Link>
 

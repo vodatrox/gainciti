@@ -25,13 +25,13 @@ export function NewsletterCTA() {
   }
 
   return (
-    <section className="bg-primary-600 dark:bg-primary-900">
+    <section className="bg-brand-dark">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold text-white">
             Stay in the loop
           </h2>
-          <p className="mt-3 text-primary-100">
+          <p className="mt-3 text-gray-300">
             Get the latest articles and insights delivered straight to your inbox.
           </p>
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -41,12 +41,12 @@ export function NewsletterCTA() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               required
-              className="h-12 rounded-lg bg-white/10 px-4 text-white placeholder:text-primary-200 outline-none ring-1 ring-white/20 backdrop-blur-sm focus:ring-2 focus:ring-white sm:w-80"
+              className="h-12 rounded-lg bg-white/10 px-4 text-white placeholder:text-gray-400 outline-none ring-1 ring-white/20 backdrop-blur-sm focus:ring-2 focus:ring-brand-green sm:w-80"
             />
             <button
               type="submit"
               disabled={status === "loading"}
-              className="h-12 rounded-lg bg-white px-6 font-medium text-primary-700 transition-colors hover:bg-primary-50 disabled:opacity-50"
+              className="h-12 rounded-lg bg-brand-green px-6 font-medium text-brand-dark transition-colors hover:bg-primary-300 disabled:opacity-50"
             >
               {status === "loading" ? "Subscribing..." : "Subscribe"}
             </button>

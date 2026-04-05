@@ -1,5 +1,6 @@
 from datetime import timedelta
-from django.db.models import Count, Q
+from itertools import chain
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.utils import timezone
 
 from .models import Category, Post, Tag
@@ -29,22 +30,45 @@ class PostRepository:
         )
 
     def get_featured(self):
-        return (
+        """Return featured posts. Posts with position=hero or is_pinned come first,
+        then remaining is_featured posts by published date."""
+        base = (
             Post.objects.filter(status=Post.Status.PUBLISHED, is_featured=True)
             .select_related("author", "category", "featured_image")
-            .prefetch_related("tags")[:5]
+            .prefetch_related("tags")
         )
+        # Priority: pinned hero > hero > pinned > rest
+        return base.annotate(
+            _priority=Case(
+                When(is_pinned=True, position=Post.Position.HERO, then=Value(0)),
+                When(position=Post.Position.HERO, then=Value(1)),
+                When(is_pinned=True, then=Value(2)),
+                default=Value(3),
+                output_field=IntegerField(),
+            )
+        ).order_by("_priority", "-published_at")[:5]
 
     def get_trending(self, days=7):
-        since = timezone.now() - timedelta(days=days)
-        return (
-            Post.objects.filter(
-                status=Post.Status.PUBLISHED,
-                published_at__gte=since,
-            )
-            .select_related("author", "category", "featured_image")
-            .order_by("-view_count")[:10]
+        """Return trending posts. Posts with position=trending come first,
+        then posts published within `days` ranked by view_count."""
+        published = Post.objects.filter(
+            status=Post.Status.PUBLISHED,
+        ).select_related("author", "category", "featured_image").prefetch_related("tags")
+
+        # Posts explicitly marked trending always appear first
+        pinned_trending = list(
+            published.filter(position=Post.Position.TRENDING)
+            .order_by("-view_count")
         )
+        pinned_ids = {p.id for p in pinned_trending}
+
+        since = timezone.now() - timedelta(days=days)
+        organic = list(
+            published.filter(published_at__gte=since)
+            .exclude(id__in=pinned_ids)
+            .order_by("-view_count")[: 10 - len(pinned_trending)]
+        )
+        return list(chain(pinned_trending, organic))
 
     def get_all(self):
         return (

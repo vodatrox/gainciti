@@ -66,6 +66,7 @@ export interface PostListItem {
 export interface PostDetail extends PostListItem {
   body: string;
   body_html: string;
+  featured_image_external_url: string;
   is_pinned: boolean;
   created_at: string;
   updated_at: string;
@@ -77,6 +78,7 @@ export interface PostCreateUpdatePayload {
   excerpt?: string;
   body: string;
   featured_image?: number | null;
+  featured_image_external_url?: string;
   category?: number | null;
   tag_ids?: number[];
   status?: PostStatus;
@@ -84,6 +86,7 @@ export interface PostCreateUpdatePayload {
   is_pinned?: boolean;
   position?: PostPosition;
   scheduled_for?: string;
+  published_at?: string;
 }
 
 // ── Media ───────────────────────────────────────────────────────────────

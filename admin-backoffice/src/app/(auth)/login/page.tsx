@@ -30,8 +30,10 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-white text-xl font-bold">
-            G
+          <div className="mx-auto">
+            <span className="text-4xl font-extrabold tracking-tight text-brand-dark">
+              G<span className="relative">A<svg className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-3.5" viewBox="0 0 14 10" fill="none"><path d="M2 8L7 3L12 8" stroke="#3BE882" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>inciti
+            </span>
           </div>
           <h1 className="mt-4 text-2xl font-bold">Welcome back</h1>
           <p className="mt-1 text-sm text-text-secondary">
