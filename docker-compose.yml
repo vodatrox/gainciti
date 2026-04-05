@@ -1,0 +1,155 @@
+services:
+  # ── Database ─────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gainciti}
+      POSTGRES_USER: ${POSTGRES_USER:-gainciti}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gainciti}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gainciti}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Cache / Broker ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Temporal ─────────────────────────────────────────────────
+  temporal:
+    image: temporalio/auto-setup:latest
+    restart: unless-stopped
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-gainciti}
+      - POSTGRES_PWD=${POSTGRES_PASSWORD:-gainciti}
+      - POSTGRES_SEEDS=postgres
+      - DEFAULT_NAMESPACE=gainciti
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "TEMPORAL_ADDRESS=$(hostname -i):7233 temporal operator cluster health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  temporal-ui:
+    image: temporalio/ui:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+    depends_on:
+      - temporal
+
+  # ── Django Backend ───────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_HOST=temporal:7233
+    volumes:
+      - ./backend:/app
+      - media_uploads:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  # ── Temporal Worker ──────────────────────────────────────────
+  temporal-worker:
+    build:
+      context: .
+      dockerfile: docker/temporal-worker.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_HOST=temporal:7233
+    depends_on:
+      temporal:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Blog Frontend ────────────────────────────────────────────
+  blog:
+    build:
+      context: .
+      dockerfile: docker/blog.Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+        - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      - INTERNAL_API_URL=http://backend:8000/api/v1
+    depends_on:
+      - backend
+
+  # ── Admin Frontend ───────────────────────────────────────────
+  admin:
+    build:
+      context: .
+      dockerfile: docker/admin.Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+        - NEXT_PUBLIC_SITE_URL=http://localhost:3001
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3001
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_uploads:

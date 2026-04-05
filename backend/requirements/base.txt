@@ -1,0 +1,16 @@
+Django==5.1.*
+djangorestframework==3.15.*
+djangorestframework-simplejwt==5.4.*
+django-cors-headers==4.6.*
+django-filter==24.*
+django-storages==1.14.*
+drf-spectacular==0.28.*
+whitenoise==6.8.*
+psycopg[binary]==3.2.*
+Pillow==11.*
+boto3==1.35.*
+temporalio==1.9.*
+gunicorn==23.*
+structlog==24.*
+sentry-sdk[django]==2.*
+bleach==6.*

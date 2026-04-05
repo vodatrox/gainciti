@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand Colors - GainCiti */
+  --color-primary-50: #EEF2FF;
+  --color-primary-100: #E0E7FF;
+  --color-primary-200: #C7D2FE;
+  --color-primary-300: #A5B4FC;
+  --color-primary-400: #818CF8;
+  --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
+  --color-primary-700: #4338CA;
+  --color-primary-800: #3730A3;
+  --color-primary-900: #312E81;
+
+  --color-accent-500: #10B981;
+  --color-accent-600: #059669;
+
+  /* Surface colors */
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #F9FAFB;
+  --color-surface-dark: #0F172A;
+  --color-surface-dark-secondary: #1E293B;
+
+  /* Text */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-dark-primary: #F9FAFB;
+  --color-text-dark-secondary: #9CA3AF;
+
+  /* Fonts */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Dark mode overrides */
+.dark {
+  --color-surface: #0F172A;
+  --color-surface-secondary: #1E293B;
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #9CA3AF;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Reading progress bar */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--color-primary-500);
+  z-index: 9999;
+  transition: width 0.1s ease-out;
+}

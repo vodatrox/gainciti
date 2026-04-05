@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Backend: Lint, Type Check, Test ────────────────────────
+  backend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff==0.8.*
+      - name: Run ruff check
+        run: cd backend && ruff check .
+      - name: Run ruff format check
+        run: cd backend && ruff format --check .
+
+  backend-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: gainciti_test
+          POSTGRES_USER: gainciti
+          POSTGRES_PASSWORD: gainciti
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements/dev.txt
+      - name: Run tests
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+        run: |
+          cd backend
+          pytest --cov=apps --cov-report=term-missing -q
+
+  # ── Blog Frontend: Lint, Type Check ────────────────────────
+  blog-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: blog/package-lock.json
+      - name: Install dependencies
+        run: cd blog && npm ci
+      - name: Lint
+        run: cd blog && npm run lint
+      - name: Type check
+        run: cd blog && npx tsc --noEmit
+
+  # ── Admin Frontend: Lint, Type Check ───────────────────────
+  admin-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: admin-backoffice/package-lock.json
+      - name: Install dependencies
+        run: cd admin-backoffice && npm ci
+      - name: Lint
+        run: cd admin-backoffice && npm run lint
+      - name: Type check
+        run: cd admin-backoffice && npx tsc --noEmit
+
+  # ── Build Docker Images (on merge to main) ─────────────────
+  build-images:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend-lint, backend-test, blog-lint, admin-lint]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            dockerfile: docker/backend.Dockerfile
+          - name: blog
+            dockerfile: docker/blog.Dockerfile
+          - name: admin
+            dockerfile: docker/admin.Dockerfile
+          - name: temporal-worker
+            dockerfile: docker/temporal-worker.Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Container Registry
+        if: env.REGISTRY_URL != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+        env:
+          REGISTRY_URL: ${{ vars.REGISTRY_URL }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ vars.REGISTRY_URL != '' }}
+          tags: |
+            ${{ vars.REGISTRY_URL && format('{0}/gainciti-{1}:latest', vars.REGISTRY_URL, matrix.name) || format('gainciti-{0}:latest', matrix.name) }}
+            ${{ vars.REGISTRY_URL && format('{0}/gainciti-{1}:{2}', vars.REGISTRY_URL, matrix.name, github.sha) || format('gainciti-{0}:{1}', matrix.name, github.sha) }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
