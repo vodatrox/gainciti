@@ -11,11 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python deps
-COPY backend/requirements/ requirements/
+COPY requirements/ requirements/
 RUN pip install --no-cache-dir -r requirements/dev.txt
 
 # Copy application code
-COPY backend/ .
+COPY . .
 
 # Collect static files
 RUN DJANGO_SETTINGS_MODULE=config.settings.prod \

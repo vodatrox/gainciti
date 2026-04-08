@@ -69,8 +69,8 @@ services:
   # ── Django Backend ───────────────────────────────────────────
   backend:
     build:
-      context: .
-      dockerfile: docker/backend.Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -97,7 +97,7 @@ services:
   temporal-worker:
     build:
       context: .
-      dockerfile: docker/temporal-worker.Dockerfile
+      dockerfile: temporal/Dockerfile
     restart: unless-stopped
     env_file: .env
     environment:
@@ -117,8 +117,8 @@ services:
   # ── Blog Frontend ────────────────────────────────────────────
   blog:
     build:
-      context: .
-      dockerfile: docker/blog.Dockerfile
+      context: ./blog
+      dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
         - NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -135,8 +135,8 @@ services:
   # ── Admin Frontend ───────────────────────────────────────────
   admin:
     build:
-      context: .
-      dockerfile: docker/admin.Dockerfile
+      context: ./admin-backoffice
+      dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
         - NEXT_PUBLIC_SITE_URL=http://localhost:3001
